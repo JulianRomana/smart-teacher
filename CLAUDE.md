@@ -34,6 +34,17 @@ This is a Next.js 16 application using the App Router with TypeScript.
 - **UI Components**: shadcn/ui
 - **AI Chat UI**: Vercel AI Elements (`src/components/ai-elements/`)
 
+## Vercel Agent Skills
+
+This project includes skills from [vercel-labs/agent-skills](https://github.com/vercel-labs/agent-skills) in `.skills/`:
+
+| Skill | When to Use | File |
+|-------|-------------|------|
+| **react-best-practices** | When writing/reviewing React components, optimizing performance, or auditing Next.js code | `.skills/react-best-practices/SKILL.md` |
+| **web-design-guidelines** | When building UI, reviewing designs, or auditing accessibility/UX | `.skills/web-design-guidelines/SKILL.md` |
+
+**IMPORTANT:** Before implementing UI or React components, read the relevant SKILL.md file to ensure best practices are followed.
+
 ## shadcn/ui Components
 
 This project uses [shadcn/ui](https://ui.shadcn.com/) for UI components. Components are installed to `src/components/ui/`.
