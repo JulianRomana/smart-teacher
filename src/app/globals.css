@@ -148,3 +148,71 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Tiptap Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: 200px;
+}
+
+.ProseMirror h1 {
+  @apply text-xl font-semibold text-white mb-2;
+}
+
+.ProseMirror h2 {
+  @apply text-lg font-medium text-blue-400 mb-3 mt-6;
+}
+
+.ProseMirror p {
+  @apply leading-relaxed text-gray-300 mb-4;
+}
+
+.ProseMirror em {
+  @apply text-sm text-gray-500 not-italic;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  @apply mt-4 space-y-2 pl-6 text-gray-300;
+}
+
+.ProseMirror ul {
+  @apply list-disc marker:text-gray-500;
+}
+
+.ProseMirror ol {
+  @apply list-decimal marker:text-gray-500;
+}
+
+.ProseMirror li {
+  @apply text-gray-300;
+}
+
+.ProseMirror blockquote {
+  @apply mt-4 border-l-4 border-blue-500/50 bg-white/5 py-3 pl-4 pr-3 text-gray-400 italic;
+}
+
+.ProseMirror blockquote p {
+  @apply text-gray-400 mb-0;
+}
+
+.ProseMirror code {
+  @apply bg-white/5 px-1.5 py-0.5 rounded text-sm text-blue-300 font-mono;
+}
+
+.ProseMirror pre {
+  @apply bg-white/5 p-4 rounded-lg overflow-x-auto my-4;
+}
+
+.ProseMirror pre code {
+  @apply bg-transparent p-0 text-gray-300;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  @apply text-gray-500;
+  content: attr(data-placeholder);
+  float: left;
+  pointer-events: none;
+  height: 0;
+}

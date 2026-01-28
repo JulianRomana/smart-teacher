@@ -1,5 +1,8 @@
 "use client";
 
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -12,50 +15,6 @@ import {
   Sparkles,
   FileText,
 } from "lucide-react";
-
-interface ChatMessage {
-  id: string;
-  role: "assistant" | "user";
-  content: string;
-  sender?: string;
-  avatar?: string;
-  actions?: { label: string; onClick?: () => void }[];
-}
-
-const sampleMessages: ChatMessage[] = [
-  {
-    id: "1",
-    role: "assistant",
-    sender: "Adam Smith AI",
-    avatar: "/adam-smith-avatar.png",
-    content:
-      "Welcome to our study of *The Wealth of Nations*. I see you've started notes on the Division of Labor. Would you like to explore how this concept relates to universal opulence?",
-  },
-  {
-    id: "2",
-    role: "user",
-    sender: "You",
-    content:
-      "Yes! I'm particularly interested in the pin factory example. Can you explain how specialization increases productivity?",
-  },
-  {
-    id: "3",
-    role: "assistant",
-    sender: "Adam Smith AI",
-    avatar: "/adam-smith-avatar.png",
-    content: `The pin factory example brilliantly illustrates three key benefits of specialization:
-
-1. **Increased dexterity** - Workers become highly skilled at their specific task
-2. **Time savings** - No switching between different types of work
-3. **Innovation opportunity** - Focused workers often devise improvements
-
-I've highlighted these points in your notes as well.`,
-    actions: [
-      { label: "Create flashcard" },
-      { label: "Expand on 'dexterity'" },
-    ],
-  },
-];
 
 interface QuickAction {
   icon: React.ReactNode;
@@ -74,39 +33,41 @@ const quickActions: QuickAction[] = [
   },
 ];
 
-function MessageBubble({ message }: { message: ChatMessage }) {
+function MessageBubble({ message }: { message: any }) {
   const isUser = message.role === "user";
+  const sender = isUser ? "You" : "Adam Smith AI";
+
+  // Extract text from message parts
+  const content = (message.parts || [])
+    .filter((part: any) => part.type === "text")
+    .map((part: any) => part.text)
+    .join("");
 
   return (
-    <div
-      className={cn(
-        "flex gap-3",
-        isUser ? "flex-row-reverse" : "flex-row"
-      )}
-    >
-      <Avatar size="sm" className="mt-1 flex-shrink-0">
-        {message.avatar ? (
-          <AvatarImage src={message.avatar} alt={message.sender || "Avatar"} />
+    <div className={cn("flex gap-3", isUser ? "flex-row-reverse" : "flex-row")}>
+      <Avatar size="sm" className="mt-1 shrink-0">
+        {!isUser ? (
+          <AvatarImage src="/adam-smith-avatar.jpg" alt={sender} />
         ) : null}
         <AvatarFallback className={cn(isUser && "bg-blue-600 text-white")}>
           {isUser ? "U" : "AS"}
         </AvatarFallback>
       </Avatar>
 
-      <div className={cn("flex flex-col gap-1 max-w-[85%]", isUser && "items-end")}>
-        <span className="text-xs text-gray-400">{message.sender}</span>
+      <div
+        className={cn("flex flex-col gap-1 max-w-[85%]", isUser && "items-end")}
+      >
+        <span className="text-xs text-gray-400">{sender}</span>
         <div
           className={cn(
             "rounded-lg px-4 py-3 text-sm",
-            isUser
-              ? "bg-[#1f6feb] text-white"
-              : "bg-[#21262d] text-gray-200"
+            isUser ? "bg-[#1f6feb] text-white" : "bg-[#21262d] text-gray-200",
           )}
         >
           <div
             className="prose prose-sm prose-invert max-w-none"
             dangerouslySetInnerHTML={{
-              __html: message.content
+              __html: content
                 .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
                 .replace(/\*(.*?)\*/g, "<em>$1</em>")
                 .replace(/\n/g, "<br />"),
@@ -114,19 +75,22 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           />
         </div>
 
-        {message.actions && message.actions.length > 0 && (
+        {!isUser && (
           <div className="flex gap-2 mt-2">
-            {message.actions.map((action, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                onClick={action.onClick}
-                className="text-xs text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
-              >
-                {action.label}
-              </Button>
-            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+            >
+              Create flashcard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+            >
+              Add to notes
+            </Button>
           </div>
         )}
       </div>
@@ -137,33 +101,63 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 export interface ChatPanelProps {
   className?: string;
   topic?: string;
-  messages?: ChatMessage[];
-  onSendMessage?: (message: string) => void;
 }
 
 export function ChatPanel({
   className,
   topic = "Economic Principles",
-  messages = sampleMessages,
-  onSendMessage,
 }: ChatPanelProps) {
+  const { messages, sendMessage, status, error } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/chat" }),
+    messages: [
+      {
+        id: "welcome",
+        role: "assistant",
+        parts: [
+          {
+            type: "text",
+            text: "Welcome to our study of *The Wealth of Nations*. I see you've started notes on the Division of Labor. Would you like to explore how this concept relates to universal opulence?",
+          },
+        ],
+      },
+    ],
+  });
+
+  const [input, setInput] = useState("");
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const form = e.target as HTMLFormElement;
-    const input = form.elements.namedItem("message") as HTMLInputElement;
-    if (input.value.trim()) {
-      onSendMessage?.(input.value);
-      input.value = "";
+    if (input.trim() && status !== "streaming") {
+      sendMessage({ text: input });
+      setInput("");
     }
   };
 
+  // Only show loading dots when waiting for response to start, not while streaming
+  const isLoading = status === "submitted";
+
+  // Auto-scroll to bottom when messages change or update
+  useEffect(() => {
+    const scrollToBottom = () => {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector(
+          "[data-radix-scroll-area-viewport]",
+        );
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
+      }
+    };
+
+    scrollToBottom();
+    // Use a small delay to ensure DOM has updated
+    const timer = setTimeout(scrollToBottom, 100);
+    return () => clearTimeout(timer);
+  }, [messages, status]);
+
   return (
-    <div
-      className={cn(
-        "flex h-full flex-col bg-[#161b22]",
-        className
-      )}
-    >
+    <div className={cn("flex h-full flex-col bg-[#161b22]", className)}>
       {/* Header */}
       <header className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
         <div>
@@ -180,11 +174,38 @@ export function ChatPanel({
       </header>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 px-4 py-4">
-        <div className="flex flex-col gap-6">
+      <ScrollArea className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
+        <div className="flex flex-col gap-6 px-4 py-4">
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
+          {isLoading && (
+            <div className="flex gap-3">
+              <Avatar size="sm" className="mt-1 shrink-0">
+                <AvatarImage src="/adam-smith-avatar.jpg" alt="Adam Smith AI" />
+                <AvatarFallback>AS</AvatarFallback>
+              </Avatar>
+              <div className="flex flex-col gap-1 max-w-[85%]">
+                <span className="text-xs text-gray-400">Adam Smith AI</span>
+                <div className="rounded-lg px-4 py-3 text-sm bg-[#21262d] text-gray-200">
+                  <div className="flex gap-1">
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "150ms" }}
+                    ></div>
+                    <div
+                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                      style={{ animationDelay: "300ms" }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </ScrollArea>
 
@@ -225,8 +246,11 @@ export function ChatPanel({
             <input
               name="message"
               type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Adam Smith anything..."
-              className="h-10 w-full rounded-full border border-gray-600 bg-[#21262d] px-4 pr-10 text-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              disabled={isLoading}
+              className="h-10 w-full rounded-full border border-gray-600 bg-[#21262d] px-4 pr-10 text-sm text-white placeholder:text-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
             />
             <Button
               type="button"
@@ -241,7 +265,8 @@ export function ChatPanel({
           <Button
             type="submit"
             size="icon"
-            className="flex-shrink-0 rounded-full bg-[#1f6feb] text-white hover:bg-[#388bfd]"
+            disabled={isLoading || !input.trim()}
+            className="flex-shrink-0 rounded-full bg-[#1f6feb] text-white hover:bg-[#388bfd] disabled:opacity-50"
           >
             <ArrowUp className="h-5 w-5" />
           </Button>

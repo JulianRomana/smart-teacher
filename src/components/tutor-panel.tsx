@@ -23,7 +23,7 @@ export function TutorPanel() {
         {/* Portrait Image */}
         <div className="overflow-hidden rounded-lg border-2 border-gray-700">
           <Image
-            src="/adam-smith.jpg"
+            src="/adam-smith-avatar.jpg"
             alt="Adam Smith portrait"
             width={268}
             height={300}
