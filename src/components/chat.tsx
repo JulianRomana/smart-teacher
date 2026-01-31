@@ -25,7 +25,7 @@ const transport = new DefaultChatTransport({
   api: "/api/chat",
 });
 
-function getTextContent(message: UIMessage): string {
+function getTextContent(message: UIMessage) {
   return message.parts
     .filter((part) => part.type === "text")
     .map((part) => part.text)
