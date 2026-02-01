@@ -1,62 +1,124 @@
 import { createGateway, streamText, convertToModelMessages } from "ai";
+import { NextResponse } from "next/server";
+import { db } from "@/lib/db";
+import { ChatRequestSchema, type Message } from "@/lib/types";
+import { convertToUIMessage, extractTitle } from "@/lib/message-utils";
 
 export const maxDuration = 30;
 
-const SYSTEM_PROMPT = `You are Adam Smith, the Father of Economics and author of "The Wealth of Nations" (1776).
-
-Your teaching style:
-- You explain economic concepts through practical examples (like the famous pin factory)
-- You connect ideas to real-world observations about commerce, labor, and markets
-- You emphasize how specialization and trade lead to prosperity
-- You speak with the wisdom of an 18th-century Scottish philosopher but in clear, modern language
-- You encourage critical thinking through Socratic questioning
-
-When teaching:
-1. Start with concrete examples students can visualize
-2. Break complex ideas into digestible parts
-3. Connect new concepts to previously discussed principles
-4. Ask probing questions to deepen understanding
-5. Relate historical insights to modern applications
-
-Key concepts you often discuss:
-- Division of labor and specialization
-- The invisible hand of the market
-- Self-interest driving public benefit
-- Natural prices vs market prices
-- Productive vs unproductive labor
-
-Keep responses conversational and encouraging. You want students to genuinely understand, not just memorize.`;
-
-// Create gateway instance with API key
 const gateway = createGateway({
   apiKey: process.env.AI_GATEWAY_API_KEY ?? "",
 });
 
 export async function POST(req: Request) {
   try {
-    const { messages } = await req.json();
+    const body = await req.json();
 
-    if (!messages || !Array.isArray(messages)) {
-      return new Response(
-        JSON.stringify({ error: "Invalid request: messages array required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+    // Validate request with Zod
+    const validationResult = ChatRequestSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { error: "Invalid request", details: validationResult.error.issues },
+        { status: 400 },
       );
     }
 
+    const { messages, conversationId, teacherId } = validationResult.data;
+
+    // Fetch teacher's system prompt
+    const teacher = await db.teacher.findUnique({
+      where: { id: teacherId },
+      select: { systemPrompt: true },
+    });
+
+    if (!teacher) {
+      return NextResponse.json(
+        { error: "Teacher not found" },
+        { status: 404 },
+      );
+    }
+
+    // Save user message atomically with transaction
+    const userMessage = messages[messages.length - 1];
+
+    await db.$transaction(async (tx) => {
+      const conversation = await tx.conversation.findUnique({
+        where: { id: conversationId },
+        select: { messages: true },
+      });
+
+      if (!conversation) {
+        throw new Error("Conversation not found");
+      }
+
+      const currentMessages = conversation.messages as Message[];
+      const isFirstMessage = currentMessages.length === 0;
+
+      await tx.conversation.update({
+        where: { id: conversationId },
+        data: {
+          messages: [...currentMessages, userMessage],
+          ...(isFirstMessage && { title: extractTitle(userMessage) }),
+        },
+      });
+    });
+
+    // Stream AI response
     const modelMessages = await convertToModelMessages(messages);
 
     const result = streamText({
       model: gateway("anthropic/claude-3-5-sonnet-20241022"),
-      system: SYSTEM_PROMPT,
+      system: teacher.systemPrompt,
       messages: modelMessages,
+      async onFinish({ response }) {
+        if (!response.messages || response.messages.length === 0) {
+          return;
+        }
+
+        try {
+          // Find the last assistant message
+          const lastMessage = response.messages[response.messages.length - 1];
+
+          // Only process assistant messages
+          if (lastMessage.role !== "assistant") {
+            return;
+          }
+
+          const assistantMessage = convertToUIMessage(lastMessage);
+
+          // Save assistant message atomically
+          await db.$transaction(async (tx) => {
+            const conversation = await tx.conversation.findUnique({
+              where: { id: conversationId },
+              select: { messages: true },
+            });
+
+            if (!conversation) {
+              throw new Error("Conversation not found");
+            }
+
+            const currentMessages = conversation.messages as Message[];
+
+            await tx.conversation.update({
+              where: { id: conversationId },
+              data: {
+                messages: [...currentMessages, assistantMessage],
+              },
+            });
+          });
+        } catch (error) {
+          console.error("Error saving assistant message:", error);
+          // Don't fail the stream if database save fails
+        }
+      },
     });
 
     return result.toUIMessageStreamResponse();
   } catch (error) {
     console.error("Chat API error:", error);
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
     );
   }
 }

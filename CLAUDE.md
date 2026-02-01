@@ -63,3 +63,68 @@ npx shadcn@latest add input textarea
 ```
 
 Do not manually create shadcn components—always use the CLI to ensure proper configuration.
+
+## Testing Protocol
+
+**MANDATORY: After implementing ANY feature, bug fix, or refactor, you MUST complete ALL of these testing steps:**
+
+### 1. TypeScript Check (REQUIRED)
+```bash
+pnpm tsc --noEmit
+```
+Fix ALL TypeScript errors before proceeding. No exceptions.
+
+### 2. End-to-End Manual Testing (REQUIRED)
+Test the COMPLETE user flow, not just the changed code:
+
+1. **Navigate to the feature** - Use Chrome DevTools MCP to navigate to the relevant page
+2. **Test the happy path** - Complete the primary user flow from start to finish
+3. **Verify database persistence** - Use `curl` or direct database queries to confirm data was saved correctly
+4. **Test edge cases** - Empty states, error states, validation
+5. **Check console** - Use `list_console_messages` to verify no errors
+
+### 3. Test Scenarios for This Project
+
+**Teacher Selection & Conversation Creation:**
+- [ ] Navigate to home page (`/`)
+- [ ] Click on a teacher
+- [ ] Verify new conversation created
+- [ ] Verify redirected to `/conversation/[id]`
+- [ ] Verify welcome message displays
+
+**Chat Flow:**
+- [ ] Send a message
+- [ ] Verify user message displays immediately
+- [ ] Wait for AI response
+- [ ] Verify assistant response displays
+- [ ] Check database: verify BOTH messages saved with correct roles
+- [ ] Verify title auto-generated from first message
+- [ ] Reload page and verify messages persist
+
+**Message Persistence:**
+After ANY change to message saving logic:
+```bash
+# Check message count and order
+curl -s http://localhost:3000/api/conversations/[ID] | jq '.conversation | {messageCount: (.messages | length), roles: (.messages | map(.role))}'
+```
+
+### 4. When to Skip Testing
+
+NEVER. Always test. Even "small changes" can break the system.
+
+### 5. Testing Checklist Template
+
+After implementing a feature, copy this checklist and verify each item:
+
+```
+- [ ] TypeScript check passed (pnpm tsc --noEmit)
+- [ ] Navigated to the feature in browser
+- [ ] Tested complete user flow
+- [ ] Verified data saved to database correctly
+- [ ] Checked console for errors
+- [ ] Tested with fresh conversation
+- [ ] Tested with existing conversation
+- [ ] Reloaded page to verify persistence
+```
+
+**If you skip testing, you WILL introduce bugs. Don't skip it.**
