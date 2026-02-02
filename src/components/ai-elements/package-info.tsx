@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import { ArrowRightIcon, MinusIcon, PackageIcon, PlusIcon } from "lucide-react";
 import { createContext, type HTMLAttributes, useContext } from "react";
 
@@ -121,7 +121,7 @@ export const PackageInfoChangeType = ({
       className={cn(
         "gap-1 text-xs capitalize",
         changeTypeStyles[changeType],
-        className
+        className,
       )}
       variant="secondary"
       {...props}
@@ -149,7 +149,7 @@ export const PackageInfoVersion = ({
     <div
       className={cn(
         "mt-2 flex items-center gap-2 font-mono text-muted-foreground text-sm",
-        className
+        className,
       )}
       {...props}
     >

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { CreateConversationRequestSchema, type Message } from "@/lib/types";
+import { CreateConversationRequestSchema, type Message } from "@/types/types";
 
 const GetConversationsSchema = z.object({
   sessionId: z.string().uuid(),

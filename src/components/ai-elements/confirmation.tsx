@@ -2,7 +2,7 @@
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import type { ToolUIPart } from "ai";
 import {
   type ComponentProps,
@@ -45,7 +45,7 @@ interface ConfirmationContextValue {
 }
 
 const ConfirmationContext = createContext<ConfirmationContextValue | null>(
-  null
+  null,
 );
 
 const useConfirmation = () => {
@@ -116,8 +116,8 @@ export const ConfirmationAccepted = ({
   // Only show when approved and in response states
   if (
     !approval?.approved ||
-      (state !== "approval-responded" &&
-          state !== "output-denied" &&
+    (state !== "approval-responded" &&
+      state !== "output-denied" &&
       state !== "output-available")
   ) {
     return null;
@@ -138,8 +138,8 @@ export const ConfirmationRejected = ({
   // Only show when rejected and in response states
   if (
     approval?.approved !== false ||
-      (state !== "approval-responded" &&
-          state !== "output-denied" &&
+    (state !== "approval-responded" &&
+      state !== "output-denied" &&
       state !== "output-available")
   ) {
     return null;

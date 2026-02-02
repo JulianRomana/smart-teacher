@@ -1,5 +1,5 @@
 import type { AssistantModelMessage } from "ai";
-import type { Message } from "./types";
+import type { Message } from "../types/types";
 
 /**
  * Convert AI SDK AssistantModelMessage to our UIMessage format

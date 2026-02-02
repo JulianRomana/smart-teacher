@@ -3,11 +3,11 @@
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import type { Message } from "@/lib/types";
+import type { Message } from "@/types/types";
 import {
   MoreHorizontal,
   PlusCircle,
@@ -38,7 +38,7 @@ function MessageBubble({
   message,
   teacherName,
 }: {
-  message: Message;
+  message: Message | any;
   teacherName: string;
 }) {
   const isUser = message.role === "user";
@@ -46,8 +46,8 @@ function MessageBubble({
 
   // Extract text from message parts (safe - no HTML rendering)
   const content = message.parts
-    .filter((part) => part.type === "text")
-    .map((part) => part.text)
+    .filter((part: any) => part.type === "text")
+    .map((part: any) => part.text)
     .join("");
 
   // Safe markdown-like formatting without dangerouslySetInnerHTML
@@ -121,12 +121,35 @@ function ChatContent({
   teacherName,
   initialMessages,
 }: ChatPanelProps) {
+  const transport = new DefaultChatTransport({
+    api: "/api/chat",
+    fetch: async (url, options) => {
+      const originalBody = options?.body
+        ? JSON.parse(options.body as string)
+        : {};
+
+      const cleanedMessages = originalBody.messages?.map((msg: any) => ({
+        ...msg,
+        parts: msg.parts?.filter((part: any) => part.type === "text") || [],
+      }));
+
+      const mergedBody = {
+        ...originalBody,
+        messages: cleanedMessages,
+        teacherId,
+        conversationId,
+      };
+
+      return fetch(url, {
+        ...options,
+        body: JSON.stringify(mergedBody),
+      });
+    },
+  });
+
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      body: { teacherId, conversationId },
-    }),
-    messages: initialMessages,
+    transport,
+    messages: initialMessages as any,
   });
 
   const [input, setInput] = useState("");
@@ -142,10 +165,8 @@ function ChatContent({
     }
   };
 
-  // Only show loading dots when waiting for response to start, not while streaming
   const isLoading = status === "submitted";
 
-  // Auto-scroll to bottom when messages change or update
   useEffect(() => {
     const scrollToBottom = () => {
       if (scrollAreaRef.current) {
@@ -169,8 +190,12 @@ function ChatContent({
       {/* Header */}
       <header className="flex items-center justify-between border-b border-gray-700 px-4 py-3">
         <div>
-          <h2 className="text-lg font-bold text-white">Discussion with {teacherName}</h2>
-          <p className="text-sm text-gray-400">Conversation ID: {conversationId.slice(0, 8)}...</p>
+          <h2 className="text-lg font-bold text-white">
+            Discussion with {teacherName}
+          </h2>
+          <p className="text-sm text-gray-400">
+            Conversation ID: {conversationId.slice(0, 8)}...
+          </p>
         </div>
         <Button
           variant="ghost"
@@ -191,7 +216,8 @@ function ChatContent({
                 Welcome to your study session with {teacherName}
               </h3>
               <p className="text-gray-400 max-w-md">
-                Ask any question to start learning. I'm here to help you understand complex concepts through discussion.
+                Ask any question to start learning. I'm here to help you
+                understand complex concepts through discussion.
               </p>
             </div>
           ) : (

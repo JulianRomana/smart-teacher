@@ -7,7 +7,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import type { Tool } from "ai";
 import { BotIcon } from "lucide-react";
 import type { ComponentProps } from "react";
@@ -33,7 +33,7 @@ export const AgentHeader = memo(
     <div
       className={cn(
         "flex w-full items-center justify-between gap-4 p-3",
-        className
+        className,
       )}
       {...props}
     >
@@ -47,7 +47,7 @@ export const AgentHeader = memo(
         )}
       </div>
     </div>
-  )
+  ),
 );
 
 export type AgentContentProps = ComponentProps<"div">;
@@ -55,7 +55,7 @@ export type AgentContentProps = ComponentProps<"div">;
 export const AgentContent = memo(
   ({ className, ...props }: AgentContentProps) => (
     <div className={cn("space-y-4 p-4 pt-0", className)} {...props} />
-  )
+  ),
 );
 
 export type AgentInstructionsProps = ComponentProps<"div"> & {
@@ -72,7 +72,7 @@ export const AgentInstructions = memo(
         <p>{children}</p>
       </div>
     </div>
-  )
+  ),
 );
 
 export type AgentToolsProps = {
@@ -93,7 +93,7 @@ export const AgentTools = memo(
         {children}
       </Accordion>
     </div>
-  )
+  ),
 );
 
 export type AgentToolProps = ComponentProps<typeof AccordionItem> & {
@@ -123,7 +123,7 @@ export const AgentTool = memo(
         </AccordionContent>
       </AccordionItem>
     );
-  }
+  },
 );
 
 export type AgentOutputProps = ComponentProps<"div"> & {
@@ -140,7 +140,7 @@ export const AgentOutput = memo(
         <CodeBlock code={schema} language="typescript" />
       </div>
     </div>
-  )
+  ),
 );
 
 Agent.displayName = "Agent";

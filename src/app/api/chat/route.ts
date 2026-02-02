@@ -1,8 +1,8 @@
 import { createGateway, streamText, convertToModelMessages } from "ai";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { ChatRequestSchema, type Message } from "@/lib/types";
-import { convertToUIMessage, extractTitle } from "@/lib/message-utils";
+import { ChatRequestSchema, type Message } from "@/types/types";
+import { convertToUIMessage, extractTitle } from "../../../utils/message";
 
 export const maxDuration = 30;
 
@@ -32,10 +32,7 @@ export async function POST(req: Request) {
     });
 
     if (!teacher) {
-      return NextResponse.json(
-        { error: "Teacher not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
     }
 
     // Save user message atomically with transaction

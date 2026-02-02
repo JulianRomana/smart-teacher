@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import {
   Home,
   FileText,
@@ -10,27 +10,29 @@ import {
   MessageCircle,
   Box,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 interface SidebarItemProps {
   icon: React.ReactNode;
   isActive?: boolean;
-  onClick?: () => void;
-  label: string;
+  href: string;
 }
 
-function SidebarItem({ icon, isActive, onClick, label }: SidebarItemProps) {
+function SidebarItem({ icon, isActive, href }: SidebarItemProps) {
   return (
-    <button
-      onClick={onClick}
-      aria-label={label}
-      className={cn(
-        "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
-        "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50",
-        isActive && "bg-blue-600 text-white hover:bg-blue-600 hover:text-white"
-      )}
-    >
-      {icon}
-    </button>
+    <Link href={href}>
+      <button
+        className={cn(
+          "flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+          "text-gray-500 hover:text-gray-300 hover:bg-gray-800/50",
+          isActive &&
+            "bg-blue-600 text-white hover:bg-blue-600 hover:text-white",
+        )}
+      >
+        {icon}
+      </button>
+    </Link>
   );
 }
 
@@ -40,69 +42,57 @@ export interface SidebarProps {
   className?: string;
 }
 
-export function Sidebar({ activeItem = "notes", onItemClick, className }: SidebarProps) {
-  const handleClick = (item: string) => {
-    onItemClick?.(item);
-  };
+export function Sidebar({ className }: SidebarProps) {
+  const pathname = usePathname();
 
   return (
     <aside
       className={cn(
         "flex h-full w-16 flex-col items-center bg-[#0d1117] py-4",
-        className
+        className,
       )}
     >
-      {/* Logo */}
       <div className="mb-6">
         <div className="flex h-10 w-10 items-center justify-center">
           <Box className="h-6 w-6 text-blue-500" />
         </div>
       </div>
 
-      {/* Top navigation items */}
       <nav className="flex flex-col items-center gap-2">
         <SidebarItem
           icon={<Home className="h-6 w-6" />}
-          isActive={activeItem === "home"}
-          onClick={() => handleClick("home")}
-          label="Home"
+          isActive={pathname === "/select-teacher"}
+          href="/select-teacher"
         />
         <SidebarItem
           icon={<FileText className="h-6 w-6" />}
-          isActive={activeItem === "notes"}
-          onClick={() => handleClick("notes")}
-          label="Notes"
+          isActive={pathname === "/notes"}
+          href="/notes"
         />
         <SidebarItem
           icon={<Clock className="h-6 w-6" />}
-          isActive={activeItem === "history"}
-          onClick={() => handleClick("history")}
-          label="History"
+          isActive={pathname === "/history"}
+          href="/history"
         />
         <SidebarItem
           icon={<Bookmark className="h-6 w-6" />}
-          isActive={activeItem === "bookmarks"}
-          onClick={() => handleClick("bookmarks")}
-          label="Bookmarks"
+          isActive={pathname === "/bookmarks"}
+          href="/bookmarks"
         />
       </nav>
 
-      {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Bottom navigation items */}
       <nav className="flex flex-col items-center gap-2">
         <SidebarItem
           icon={<Settings className="h-6 w-6" />}
-          isActive={activeItem === "settings"}
-          onClick={() => handleClick("settings")}
-          label="Settings"
+          isActive={pathname === "/settings"}
+          href="/settings"
         />
         <SidebarItem
           icon={<MessageCircle className="h-6 w-6" />}
-          isActive={activeItem === "chat"}
-          onClick={() => handleClick("chat")}
-          label="Chat"
+          isActive={pathname === "/chat"}
+          href="/chat"
         />
       </nav>
     </aside>
